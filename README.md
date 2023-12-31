@@ -31,6 +31,19 @@ ansible-playbook -i inventaire.ini playbook.yml -e @conf1.yml
 
 Ce fichier de configuration (`conf1.yml`) est utilisé pour spécifier les paramètres de réseau et d'autres configurations pour l'installation et la configuration de Proxmox VE. Voici une description des principales sections de ce fichier :
 
+### Configurations réseau
+
+Cette section concerne la configuration du réseau.
+
+- `ipv4`: L'adresse IP IPv4.
+- `ipv4_gw`: La passerelle IPv4.
+- `ipv6`: L'adresse IP IPv6.
+- `ipv6_gw`: La passerelle IPv6.
+- `br_ipv4`: L'adresse IP du pont IPv4.
+- `br_ipv6`: L'adresse IP du pont IPv6.
+- `bridge`: Le nom du pont réseau (ex. vmbr0).
+
+
 ### Activation de Let's Encrypt
 
 - `lets_encrypt_enabled`: Indique si Let's Encrypt doit être activé ou non pour obtenir un certificat SSL.
@@ -47,18 +60,6 @@ Ce fichier de configuration (`conf1.yml`) est utilisé pour spécifier les param
 - `pbs_fingerprint`: L'empreinte du serveur PBS.
 - `pbs_datastore`: Le datastore à utiliser pour les sauvegardes PBS.
 - `pbs_storage_id`: L'identifiant du stockage PBS.
-
-### Configurations réseau
-
-Cette section concerne la configuration du réseau.
-
-- `ipv4`: L'adresse IP IPv4.
-- `ipv4_gw`: La passerelle IPv4.
-- `ipv6`: L'adresse IP IPv6.
-- `ipv6_gw`: La passerelle IPv6.
-- `br_ipv4`: L'adresse IP du pont IPv4.
-- `br_ipv6`: L'adresse IP du pont IPv6.
-- `bridge`: Le nom du pont réseau (ex. vmbr0).
 
 ### Configuration iptables Proxmox
 
