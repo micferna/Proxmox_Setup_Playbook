@@ -5,6 +5,11 @@
 
 [![Utilisateurs en ligne](https://img.shields.io/discord/347412941630341121?style=flat-square&logo=discord&colorB=7289DA)](https://discord.gg/347412941630341121)
 
+<p align="center">
+  <img src="https://i.ibb.co/ZSwCpNd/DALL-E-2023-12-31-22-16-41-Une-repr-sentation-futuriste-et-sophistiqu-e-d-un-Proxmox-Setup-Playbook.png" alt="Nom de l'image">
+</p>
+
+
 # Setup environnement
 
 ```bash
