@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Charger les règles existantes
+iptables-restore < /etc/iptables/rules.v4
+ip6tables-restore < /etc/iptables/rules.v6
+
+# Configuration des interfaces et adresses IP
+EXTERNAL_IF="{{ ansible_default_ipv4.interface }}" # Interface externe détectée automatiquement
+INTERNAL_IF="{{ internal_interface }}" # Interface interne
+
+# Autres variables...
+ALLOWED_IP="{{ allowed_ip }}"
+ALLOWED_IP_V6="{{ allowed_ip_v6 }}"
+ALLOWED_IP_PRIVE="{{ allowed_ip_prive }}"
+PORT_SSH="{{ port_ssh }}"
+IP_WIREGUAR="{{ ip_wireguard }}"
+IP_V6_WIREGUARD="{{ ip_v6_wireguard }}"
+PORT_WIREGUARD="{{ port_wireguard }}"
+
+# Activation de l'IP forwarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
+
+# Réinitialisation des tables iptables et ip6tables
+
+
+# ICI VOS REGLES
+
+
+
+# Enregistrement des nouvelles règles
+iptables-save > /etc/iptables/rules.v4
+ip6tables-save > /etc/iptables/rules.v6

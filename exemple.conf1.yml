@@ -1,0 +1,36 @@
+# Config réseaux Proxmox
+network_configs:
+  ipv4: 88/26
+  ipv4_gw: 88.193
+  ipv6: ::2/128
+  ipv6_gw: fe80::1
+  br_ipv4: 10.10.10.1/24
+  br_ipv6: ::2/64
+  bridge: vmbr0
+
+
+# Activation de Let's Encrypt
+lets_encrypt_enabled: true
+lets_encrypt_email: ""
+lets_encrypt_domain: ""
+acme_account_name: ""
+
+# Proxmox Backup Serveur
+configurer_pbs: false
+pbs_server_ip: 
+pbs_user: 
+pbs_password: 
+pbs_fingerprint: 
+pbs_datastore: 
+pbs_storage_id: ''
+
+# Config iptables Proxmox
+configurer_iptables: true
+internal_interface: "vmbr0"      # Interface interne, souvent un pont
+allowed_ip: "90"     # Adresse IP autorisée pour l'accès à l'interface web de Proxmox (maison)
+allowed_ip_v6: "0::/56"  # Adresse IPv6 autorisée (maison)
+allowed_ip_prive: "10.10.10.10"  # Adresse IP privée autorisée pour SSH, etc. (VPN configuré sur une VM)
+port_ssh: "22"                   # Port SSH Proxmox
+ip_wireguard: "10.10.10.10"      # Adresse IP du serveur WireGuard (L'IP DE LA VM V4)
+ip_v6_wireguard: "::10/64"  # Adresse IPv6 du serveur WireGuard (L'IP DE LA VM V6)
+port_wireguard: "6655"          # Port du serveur WireGuard

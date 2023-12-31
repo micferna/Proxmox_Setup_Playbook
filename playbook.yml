@@ -1,0 +1,22 @@
+- name: Playbook Central
+  hosts: proxmox_servers
+  become: yes
+
+  tasks:
+    - name: Inclure les variables de configuration
+      include_vars: conf1.yml
+
+    - name: Exécuter le playbook d'installation de Proxmox VE
+      include_tasks: playbook/install_proxmox.yml
+
+    - name: Configurer Let's Encrypt
+      include_tasks: playbook/lets_encrypt.yml
+
+    - name: Configurer Proxmox Backup Server
+      include_tasks: playbook/configure_pbs.yml
+      
+    - name: Configurer iptables
+      include_tasks: playbook/configure_iptables.yml
+
+    - name: information final
+      include_tasks: playbook/info_final.yml

@@ -1,0 +1,28 @@
+#configure_iptables.yml
+- block:
+    - name: Récupérer le nom de l'interface réseau principale
+      ansible.builtin.shell:
+        cmd: ip route | grep default | awk '{print $5}' | head -n 1
+      register: main_interface
+      changed_when: false
+
+    - name: Générer le script iptables à partir du template
+      template:
+        src: iptables.j2
+        dest: /tmp/iptables.sh
+        mode: '0700'
+      vars:
+        external_interface: "{{ main_interface.stdout }}"
+      when: configurer_iptables
+
+    - name: Exécuter le script iptables
+      command: /tmp/iptables.sh
+      when: configurer_iptables
+
+    - name: Nettoyer le fichier de règles iptables temporaire
+      file:
+        path: "/tmp/iptables.sh"
+        state: absent
+      when: configurer_iptables
+
+  when: configurer_iptables

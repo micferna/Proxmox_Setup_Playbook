@@ -1,0 +1,39 @@
+# lets_encrypt.yml
+- block:
+    - name: Trouver le chemin du certificat Let's Encrypt
+      shell: find /etc/pve -name "fullchain.pem"
+      register: cert_path
+      changed_when: False
+
+    - name: Récupérer la date d'expiration du certificat Let's Encrypt
+      shell: openssl x509 -enddate -noout -in "{{ cert_path.stdout_lines[0] }}"
+      register: openssl_output
+      when: cert_path.stdout != ""
+
+    - name: Vérifier si le certificat expire bientôt ou n'existe pas
+      set_fact:
+        cert_needs_renewal: "{{ openssl_output.stdout is not defined or ('notAfter' in openssl_output.stdout and ((openssl_output.stdout | regex_replace('notAfter=', '') | to_datetime('%b %d %H:%M:%S %Y %Z')) - ansible_date_time.iso8601 | to_datetime('%Y-%m-%dT%H:%M:%SZ')) < timedelta(days=30)) }}"
+      when: cert_path.stdout != ""
+
+    - name: Vérifier si le compte ACME existe
+      shell: pvenode acme account info {{ acme_account_name }} | grep 'Account URL' || echo "Account does not exist"
+      register: acme_account_check
+      ignore_errors: yes
+
+    - name: Enregistrer le compte ACME avec Let's Encrypt si nécessaire
+      expect:
+        command: pvenode acme account register {{ acme_account_name }} {{ lets_encrypt_email }}
+        responses:
+          (?i)Enter selection: "0"
+          (?i)Do you agree to the above terms\? \[y\|N\]: "y"
+        timeout: 60
+      when: "'Account does not exist' in acme_account_check.stdout or acme_account_check.rc != 0"
+
+    - name: Configurer le domaine pour le certificat ACME
+      command: pvenode config set --acme domains={{ lets_encrypt_domain }}
+
+    - name: Commander le certificat Let's Encrypt si nécessaire
+      command: pvenode acme cert order
+      when: cert_path.stdout == "" or cert_needs_renewal
+
+  when: lets_encrypt_enabled

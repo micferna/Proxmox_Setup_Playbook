@@ -1,0 +1,76 @@
+# install_proxmox.yml
+- name: Vérifier si Proxmox VE est déjà installé
+  ansible.builtin.command: dpkg -l pve-manager
+  register: pve_check
+  failed_when: false
+  changed_when: false
+  ignore_errors: true
+
+- block:
+  - name: Ajouter la clé GPG de Proxmox VE
+    ansible.builtin.apt_key:
+      url: https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg
+      state: present
+    when: pve_check.rc != 0 or 'pve-manager' not in pve_check.stdout
+
+  - name: Ajouter le dépôt Proxmox VE
+    ansible.builtin.apt_repository:
+      repo: deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+      state: present
+    when: pve_check.rc != 0 or 'pve-manager' not in pve_check.stdout
+
+  - name: Mettre à jour tous les paquets
+    ansible.builtin.apt:
+      update_cache: yes
+      upgrade: full
+
+  - name: Installer Proxmox VE et les dépendances nécessaires
+    ansible.builtin.apt:
+      name:
+        - proxmox-ve
+        - postfix
+        - open-iscsi
+        - chrony
+        - python3-pexpect
+        - iptables-persistent
+      state: latest
+
+  - name: Installer le noyau Proxmox par défaut
+    ansible.builtin.apt:
+      name: proxmox-default-kernel
+      state: latest
+
+  - name: Redémarrer le serveur pour utiliser le noyau Proxmox
+    ansible.builtin.reboot:
+
+  when: pve_check.rc != 0 or 'pve-manager' not in pve_check.stdout
+
+- name: Commenter le dépôt entreprise dans /etc/apt/sources.list
+  lineinfile:
+    path: /etc/apt/sources.list.d/pve-enterprise.list
+    regexp: '^(deb.*pve-enterprise.*)$'
+    line: '#\1'
+    backrefs: yes
+
+- name: Mise à jour de la liste des paquets
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Récupérer le nom de l'interface réseau principale
+  ansible.builtin.shell:
+    cmd: ip route | grep default | awk '{print $5}' | head -n 1
+  register: main_interface
+  changed_when: false
+
+- name: Configurer le réseau
+  ansible.builtin.template:
+    src: templates/interfaces.j2
+    dest: /etc/network/interfaces
+  vars:
+    interface_name: "{{ main_interface.stdout }}"
+  register: network_config_changed
+
+- name: Recharger la configuration réseau
+  ansible.builtin.shell:
+    cmd: systemctl restart networking
+  when: network_config_changed.changed

@@ -1,0 +1,24 @@
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+iface lo inet6 loopback
+
+auto {{ interface_name }}
+iface {{ interface_name }} inet static
+    address {{ network_configs.ipv4 }}
+    gateway {{ network_configs.ipv4_gw }}
+
+iface {{ interface_name }} inet6 static
+    address {{ network_configs.ipv6 }}
+    gateway {{ network_configs.ipv6_gw }}
+
+auto {{ network_configs.bridge }}
+iface {{ network_configs.bridge }} inet static
+    address {{ network_configs.br_ipv4 }}
+    bridge-ports none
+    bridge-stp off
+    bridge-fd 0
+
+iface {{ network_configs.bridge }} inet6 static
+    address {{ network_configs.br_ipv6 }}

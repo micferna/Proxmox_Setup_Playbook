@@ -1,0 +1,43 @@
+# configure_pbs.yml
+- block:
+    - name: Vérifier si le fichier fingerprint est différent
+      stat:
+        path: /etc/pve/pbs-fingerprints.cfg
+      register: fingerprint_file
+
+    - name: Créer un fichier temporaire pour le fingerprint PBS
+      copy:
+        content: "{{ pbs_server_ip }} {{ pbs_fingerprint }}"
+        dest: "/tmp/pbs-fingerprints.cfg"
+      when: not fingerprint_file.stat.exists or fingerprint_file.stat.checksum != 'votre_checksum'
+
+    - name: Copier le fichier fingerprint au bon endroit si nécessaire
+      command: cp /tmp/pbs-fingerprints.cfg /etc/pve/pbs-fingerprints.cfg
+      become: yes
+      when: not fingerprint_file.stat.exists or fingerprint_file.stat.checksum != 'votre_checksum'
+
+    - name: Vérifier si le stockage PBS existe déjà
+      shell: pvesm status | grep -q '{{ pbs_storage_id }}'
+      register: storage_exists
+      failed_when: false
+
+    - name: Ajouter le serveur PBS dans la configuration de stockage si nécessaire
+      shell: |
+        pvesm add pbs '{{ pbs_storage_id }}' --server '{{ pbs_server_ip }}' --username '{{ pbs_user }}' --password '{{ pbs_password }}' --datastore '{{ pbs_datastore }}' --fingerprint '{{ pbs_fingerprint }}'
+      args:
+        executable: /bin/bash
+      when: storage_exists.rc != 0
+
+    - name: Redémarrer les services Proxmox si nécessaire
+      systemd:
+        name: pveproxy
+        state: restarted
+      when: storage_exists.rc != 0 or not fingerprint_file.stat.exists or fingerprint_file.stat.checksum != 'votre_checksum'
+
+    - name: Nettoyer le fichier temporaire
+      file:
+        path: "/tmp/pbs-fingerprints.cfg"
+        state: absent
+      when: not fingerprint_file.stat.exists or fingerprint_file.stat.checksum != 'votre_checksum'
+
+  when: configurer_pbs

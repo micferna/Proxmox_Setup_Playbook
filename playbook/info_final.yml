@@ -1,0 +1,83 @@
+# info_final.yml
+- name: Afficher les règles iptables IPv4
+  ansible.builtin.shell: iptables -nvL
+  register: iptables_ipv4
+  changed_when: false
+
+- name: Afficher les règles iptables IPv6
+  ansible.builtin.shell: ip6tables -nvL
+  register: iptables_ipv6
+  changed_when: false
+
+- name: Effectuer un ping en IPv4
+  ansible.builtin.shell: ping -c 4 8.8.8.8
+  register: ping_ipv4
+  changed_when: false
+
+- name: Effectuer un ping en IPv6
+  ansible.builtin.shell: ping6 -c 4 2001:4860:4860::8888
+  register: ping_ipv6
+  changed_when: false
+
+- name: Afficher les informations sur les interfaces IPv4
+  ansible.builtin.shell: ip -4 addr show
+  register: ipv4_interfaces
+  changed_when: false
+
+- name: Afficher les informations sur les interfaces IPv6
+  ansible.builtin.shell: ip -6 addr show
+  register: ipv6_interfaces
+  changed_when: false
+
+- name: Détecter l'adresse IP du réseau NAT IPv4
+  ansible.builtin.shell: ip route | grep -Eo 'via [0-9.]+' | awk '{print $2}' | head -n 1
+  register: nat_ipv4
+  changed_when: false
+
+- name: Effectuer un ping à l'intérieur du réseau NAT IPv4
+  ansible.builtin.shell: ping -c 4 {{ nat_ipv4.stdout }}
+  register: ping_nat_ipv4
+  changed_when: false
+  when: nat_ipv4.stdout is defined
+
+- name: Détecter l'adresse IP du réseau NAT IPv6
+  ansible.builtin.shell: ip -6 route | grep -Eo 'via [0-9a-f:]+' | awk '{print $2}' | head -n 1
+  register: nat_ipv6
+  changed_when: false
+
+- name: Afficher les règles iptables IPv4
+  ansible.builtin.debug:
+    var: iptables_ipv4.stdout_lines
+
+- name: Afficher les règles iptables IPv6
+  ansible.builtin.debug:
+    var: iptables_ipv6.stdout_lines
+
+- name: Effectuer un ping en IPv4
+  ansible.builtin.debug:
+    var: ping_ipv4.stdout_lines
+
+- name: Effectuer un ping en IPv6
+  ansible.builtin.debug:
+    var: ping_ipv6.stdout_lines
+
+- name: Afficher les informations sur les interfaces IPv4
+  ansible.builtin.debug:
+    var: ipv4_interfaces.stdout_lines
+
+- name: Afficher les informations sur les interfaces IPv6
+  ansible.builtin.debug:
+    var: ipv6_interfaces.stdout_lines
+
+- name: Détecter l'adresse IP du réseau NAT IPv4
+  ansible.builtin.debug:
+    var: nat_ipv4.stdout_lines
+
+- name: Effectuer un ping à l'intérieur du réseau NAT IPv4
+  ansible.builtin.debug:
+    var: ping_nat_ipv4.stdout_lines
+
+- name: Détecter l'adresse IP du réseau NAT IPv6
+  ansible.builtin.debug:
+    var: nat_ipv6.stdout_lines
+
