@@ -76,7 +76,7 @@ Cette section concerne la configuration du réseau.
 
 ## Playbook
 
-Le playbook fourni est utilisé pour installer et configurer Proxmox VE en utilisant les paramètres définis dans le fichier `vars/network.yml`. Voici un aperçu des principales tâches effectuées par ce playbook :
+Le playbook fourni est utilisé pour installer et configurer Proxmox VE en utilisant les paramètres définis dans le fichier `exemple.conf1.yml`. Voici un aperçu des principales tâches effectuées par ce playbook :
 
 1. Vérification de l'installation de Proxmox VE.
 2. Ajout de la clé GPG de Proxmox VE et du dépôt Proxmox VE si nécessaire.
@@ -88,4 +88,4 @@ Le playbook fourni est utilisé pour installer et configurer Proxmox VE en utili
 8. Affichage des règles iptables actuelles.
 9. Configuration de Proxmox Backup Serveur (PBS) si activé.
 
-Ce playbook est conçu pour automatiser l'installation et la configuration de Proxmox VE de manière efficace. Assurez-vous d'avoir correctement configuré les paramètres dans le fichier `vars/network.yml` avant de l'exécuter.
+Ce playbook est conçu pour automatiser l'installation et la configuration de Proxmox VE de manière efficace. Assurez-vous d'avoir correctement configuré les paramètres dans le fichier `exemple.conf1.yml` avant de l'exécuter.
