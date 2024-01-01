@@ -1,0 +1,25 @@
+- name: Restaurer les VMs depuis le PBS si configuré
+  when: configurer_pbs
+  block:
+    - name: Vérifier si la configuration PBS est activée
+      fail:
+        msg: "La restauration PBS n'est pas configurée"
+      when: not configurer_pbs
+
+    - name: Obtenir la liste des sauvegardes de VMs depuis PBS
+      shell: pvesm list "{{ pbs_storage_id }}" | awk '/backup/ {print $1 " " $5}'
+      register: vm_backup_list
+
+    - name: Afficher la liste des sauvegardes
+      debug:
+        msg: "{{ vm_backup_list.stdout_lines }}"
+
+    - name: Vérifier si la VM existe déjà et restaurer si nécessaire
+      shell: |
+        if ! qm status "{{ item.split(' ')[1] }}" > /dev/null 2>&1; then
+          qmrestore "{{ item.split(' ')[0] }}" "{{ item.split(' ')[1] }}"
+        else
+          echo "La VM avec l'ID {{ item.split(' ')[1] }} existe déjà, restauration ignorée."
+        fi
+      loop: "{{ vm_backup_list.stdout_lines }}"
+      ignore_errors: yes
