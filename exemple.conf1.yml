@@ -25,6 +25,7 @@ pbs_datastore:
 pbs_storage_id: ''
 
 # Config iptables Proxmox
+# Exemple de variable qui sont exécuté par exemple.conf.yml sur exemple.iptables.j2
 configurer_iptables: true
 internal_interface: "vmbr0"      # Interface interne, souvent un pont
 allowed_ip: "90"     # Adresse IP autorisée pour l'accès à l'interface web de Proxmox (maison)
