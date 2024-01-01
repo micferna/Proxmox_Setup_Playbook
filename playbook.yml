@@ -18,5 +18,8 @@
     - name: Configurer iptables
       include_tasks: playbook/configure_iptables.yml
 
+    - name: Restauration PBS
+      include_tasks: playbook/restore.yml
+
     - name: information final
       include_tasks: playbook/info_final.yml
