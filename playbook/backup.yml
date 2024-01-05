@@ -1,0 +1,62 @@
+- name: Vérifier si la configuration PBS est activée
+  fail:
+    msg: "La configuration PBS n'est pas activée"
+  when: not configurer_pbs
+
+- name: Lister toutes les VMs
+  shell: qm list | awk '{if(NR>1)print $1}'
+  register: all_vms
+  when: configurer_pbs
+
+- name: Vérifier si la VM a une sauvegarde sur PBS
+  shell: pvesm list "{{ pbs_storage_id }}" | grep -q "{{ item }}"
+  register: backup_check
+  ignore_errors: true
+  with_items: "{{ all_vms.stdout_lines }}"
+  when: configurer_pbs
+
+- name: Vérifier si la VM est en cours d'exécution
+  shell: "qm status '{{ item }}' | grep -q 'status: running'"
+  register: vm_running
+  ignore_errors: true
+  with_items: "{{ all_vms.stdout_lines }}"
+  when: configurer_pbs
+
+- name: Éteindre la VM si elle est allumée
+  shell: "qm stop '{{ item.item }}'"
+  when: >-
+    configurer_pbs and
+    item.rc == 0 and
+    backup_check is defined and
+    (backup_check.results | selectattr('item', 'equalto', item.item) | map(attribute='rc') | list | first | default(0)) == 1
+  loop: "{{ vm_running.results }}"
+  loop_control:
+    loop_var: item
+
+- name: Attendre que la VM soit éteinte
+  shell: "qm status '{{ item.item }}' | grep -q 'status: stopped'"
+  register: vm_stopped
+  retries: 30
+  delay: 10
+  until: vm_stopped.rc == 0
+  when: >-
+    configurer_pbs and
+    item.rc == 0 and
+    (backup_check.results | json_query("[?item=='" + item.item + "'].rc") | first | default(0)) == 1
+  loop: "{{ vm_running.results }}"
+  loop_control:
+    loop_var: item
+
+- name: Effectuer la sauvegarde de la VM
+  shell: vzdump "{{ item }}" --storage "{{ pbs_storage_id }}" --remove 1 --mode snapshot
+  when: configurer_pbs
+  with_items: "{{ all_vms.stdout_lines }}"
+
+- name: Redémarrer la VM
+  shell: qm start "{{ item }}"
+  async: 600
+  poll: 0
+  with_items: "{{ all_vms.stdout_lines }}"
+  when: >-
+    configurer_pbs and
+    (vm_running.results | selectattr('item', 'equalto', item) | map(attribute='rc') | first | default(1)) == 0

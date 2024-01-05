@@ -8,7 +8,6 @@ network_configs:
   br_ipv6: ::2/64
   bridge: vmbr0
 
-
 # Activation de Let's Encrypt
 lets_encrypt_enabled: true
 lets_encrypt_email: ""
@@ -35,3 +34,8 @@ port_ssh: "22"                   # Port SSH Proxmox
 ip_wireguard: "10.10.10.10"      # Adresse IP du serveur WireGuard (L'IP DE LA VM V4)
 ip_v6_wireguard: "::10/64"  # Adresse IPv6 du serveur WireGuard (L'IP DE LA VM V6)
 port_wireguard: "6655"          # Port du serveur WireGuard
+
+# Playbook pour restauré ou envoyer les backup sur Proxmox Backup Serveur
+# Proxmox Backup Serveur doit être configuré pour qu'il fonctionne
+run_restore: false
+run_backup: true
