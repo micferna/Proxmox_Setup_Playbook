@@ -38,4 +38,4 @@ port_wireguard: "6655"          # Port du serveur WireGuard
 # Playbook pour restauré ou envoyer les backup sur Proxmox Backup Serveur
 # Proxmox Backup Serveur doit être configuré pour qu'il fonctionne
 run_restore: false
-run_backup: true
+run_backup: false
