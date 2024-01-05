@@ -21,5 +21,8 @@
     - name: Restauration PBS
       include_tasks: playbook/restore.yml
 
-    - name: information final
-      include_tasks: playbook/info_final.yml
+#    - name: Backup PBS
+#      include_tasks: playbook/backup.yml
+
+#    - name: information final
+#      include_tasks: playbook/info_final.yml
