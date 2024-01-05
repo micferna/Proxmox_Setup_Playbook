@@ -20,9 +20,11 @@
 
     - name: Restauration PBS
       include_tasks: playbook/restore.yml
+      when: run_restore | default(false)
 
-#    - name: Backup PBS
-#      include_tasks: playbook/backup.yml
+    - name: Backup PBS
+      include_tasks: playbook/backup.yml
+      when: run_backup | default(false)
 
 #    - name: information final
 #      include_tasks: playbook/info_final.yml
