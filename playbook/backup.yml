@@ -59,4 +59,5 @@
   with_items: "{{ all_vms.stdout_lines }}"
   when: >-
     configurer_pbs and
+    restart_vm_after_backup and
     (vm_running.results | selectattr('item', 'equalto', item) | map(attribute='rc') | first | default(1)) == 0
