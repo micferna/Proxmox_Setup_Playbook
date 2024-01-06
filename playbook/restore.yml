@@ -6,20 +6,31 @@
         msg: "La restauration PBS n'est pas configurée"
       when: not configurer_pbs
 
-    - name: Obtenir la liste des sauvegardes de VMs depuis PBS
-      shell: pvesm list "{{ pbs_storage_id }}" | awk '/backup/ {print $1 " " $5}'
-      register: vm_backup_list
+    - name: Obtenir la liste des sauvegardes de VMs depuis PBS, triée par date
+      shell: pvesm list "{{ pbs_storage_id }}" | grep 'backup/vm' | sort -k5,6r
+      register: sorted_vm_backup_list
 
-    - name: Afficher la liste des sauvegardes
+    - name: Extraire la dernière sauvegarde pour chaque VM
+      set_fact:
+        latest_vm_backups: "{{ latest_vm_backups | default({}) | combine({ item.split(' ')[-1]: item }) }}"
+      loop: "{{ sorted_vm_backup_list.stdout_lines }}"
+      when: sorted_vm_backup_list.stdout_lines is defined
+
+    - name: Afficher la liste des sauvegardes les plus récentes
       debug:
-        msg: "{{ vm_backup_list.stdout_lines }}"
+        msg: "{{ latest_vm_backups.values() }}"
 
     - name: Vérifier si la VM existe déjà et restaurer si nécessaire
       shell: |
-        if ! qm status "{{ item.split(' ')[1] }}" > /dev/null 2>&1; then
-          qmrestore "{{ item.split(' ')[0] }}" "{{ item.split(' ')[1] }}"
+        VMID="{{ item.split(' ')[-1] }}"
+        BackupFile="{{ item.split(' ')[0] }}"
+        if ! qm status "$VMID" > /dev/null 2>&1; then
+          qmrestore "$BackupFile" "$VMID"
+          if [ "{{ start_vm_after_restore }}" = "true" ]; then
+            qm start "$VMID"
+          fi
         else
-          echo "La VM avec l'ID {{ item.split(' ')[1] }} existe déjà, restauration ignorée."
+          echo "La VM avec l'ID $VMID existe déjà, restauration ignorée."
         fi
-      loop: "{{ vm_backup_list.stdout_lines }}"
+      loop: "{{ latest_vm_backups.values() }}"
       ignore_errors: yes
