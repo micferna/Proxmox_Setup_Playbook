@@ -39,7 +39,7 @@ port_wireguard: "6655"          # Port du serveur WireGuard
 # Playbook pour restauré ou envoyer les backup sur Proxmox Backup Serveur
 # Proxmox Backup Serveur doit être configuré pour qu'il fonctionne
 
-# Pour recevoire depuis PBS
+# Pour recevoir depuis PBS
 run_restore: false
 start_vm_after_restore: true
 # Pour envoyer sur PBS
