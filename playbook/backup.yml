@@ -19,29 +19,25 @@
       loop: "{{ all_vms.stdout_lines }}"
       when: configurer_pbs
 
-    - name: Vérifier sauvegardes et statut de chaque VM
-      block:
-        - name: Vérifier si la VM a une sauvegarde sur PBS
-          shell: pvesm list "{{ pbs_storage_id }}" | grep "{{ item }}" || echo "Pas de sauvegarde"
-          register: backup_check
-          loop: "{{ all_vms.stdout_lines }}"
-          when: configurer_pbs
+    - name: Vérifier si la VM est en cours d'exécution
+      shell: "qm status '{{ item }}' | grep 'status: running'"
+      register: vm_running
+      ignore_errors: yes
+      changed_when: false
+      failed_when: false
+      loop: "{{ all_vms.stdout_lines }}"
+      when: configurer_pbs
 
-        - name: Vérifier si la VM est en cours d'exécution
-          shell: "qm status '{{ item }}' | grep 'status: running' || echo '{{ item }} -> Déjà éteinte'"
-          register: vm_running
-          loop: "{{ all_vms.stdout_lines }}"
-          when: configurer_pbs
+    - name: Identifier les VMs allumées et non templates
+      set_fact:
+        vms_to_shutdown: "{{ vm_running.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"
+      when: configurer_pbs
 
-    - name: Éteindre la VM si elle est allumée et n'est pas un template
-      shell: "qm stop '{{ item.item }}'"
-      when: >-
-        configurer_pbs and
-        "'status: running' in lookup('shell', 'qm status \"' + item.item + '\" | grep \"status: running\"')" and
-        item.rc != 0
-      loop: "{{ vm_is_template.results }}"
-      loop_control:
-        loop_var: item
+    - name: Éteindre les VMs nécessaires
+      shell: "qm stop '{{ item }}'"
+      when: item in vms_to_shutdown and item not in vm_is_template.results | map(attribute='item')
+      loop: "{{ all_vms.stdout_lines }}"
+      register: vms_stopped
 
     - name: Attendre que la VM soit éteinte
       shell: "qm status '{{ item }}' | grep 'status: stopped' || true"
@@ -49,25 +45,17 @@
       retries: 30
       delay: 10
       until: vm_stopped.rc == 0
-      when: >-
-        configurer_pbs and
-        "'status: running' in lookup('shell', 'qm status \"' + item + '\" | grep \"status: running\"')"
+      when: item in vms_stopped.results | map(attribute='item')
       loop: "{{ all_vms.stdout_lines }}"
 
     - name: Effectuer la sauvegarde de la VM
       shell: vzdump "{{ item }}" --storage "{{ pbs_storage_id }}" --remove 1 --mode snapshot
       when: configurer_pbs
-      with_items: "{{ all_vms.stdout_lines }}"
+      loop: "{{ all_vms.stdout_lines }}"
 
-    - name: Redémarrer la VM si elle n'est pas un template
-      shell: qm start "{{ item.item }}"
+    - name: Redémarrer les VMs non-templates
+      shell: qm start "{{ item }}"
       async: 600
       poll: 0
-      when: >-
-        configurer_pbs and
-        restart_vm_after_backup and
-        (vm_running.results | selectattr('item', 'equalto', item.item) | map(attribute='stdout') | list | first | default('')) != 'Déjà éteinte' and
-        "grep -q 'template: 1' not in item.stdout"
-      loop: "{{ vm_is_template.results }}"
-      loop_control:
-        loop_var: item
+      when: item not in vm_is_template.results | map(attribute='item')
+      loop: "{{ all_vms.stdout_lines }}"
