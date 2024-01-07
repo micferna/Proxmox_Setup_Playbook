@@ -27,21 +27,20 @@ pbs_storage_id: ''
 # Exemple de variable qui sont exécuté par exemple.conf.yml sur exemple.iptables.j2
 configurer_iptables: true
 internal_interface: "vmbr0"      # Interface interne, souvent un pont
-allowed_ip: "90"     # Adresse IP autorisée pour l'accès à l'interface web de Proxmox (maison)
-allowed_ip_v6: "0::/56"  # Adresse IPv6 autorisée (maison)
+allowed_ip: "90"                 # Adresse IP autorisée pour l'accès à l'interface web de Proxmox (maison)
+allowed_ip_v6: "0::/56"          # Adresse IPv6 autorisée (maison)
 allowed_ip_prive: "10.10.10.10"  # Adresse IP privée autorisée pour SSH, etc. (VPN configuré sur une VM)
 port_ssh: "22"                   # Port SSH Proxmox
 ip_wireguard: "10.10.10.10"      # Adresse IP du serveur WireGuard (L'IP DE LA VM V4)
-ip_v6_wireguard: "::10/64"  # Adresse IPv6 du serveur WireGuard (L'IP DE LA VM V6)
-port_wireguard: "6655"          # Port du serveur WireGuard
+ip_v6_wireguard: "::10/64"       # Adresse IPv6 du serveur WireGuard (L'IP DE LA VM V6)
+port_wireguard: "6655"           # Port du serveur WireGuard
 
 
 # Playbook pour restauré ou envoyer les backup sur Proxmox Backup Serveur
 # Proxmox Backup Serveur doit être configuré pour qu'il fonctionne
 
-# Pour recevoir depuis PBS
-run_restore: false
-start_vm_after_restore: true
-# Pour envoyer sur PBS
-run_backup: false
-restart_vm_after_backup: true
+run_backup: true              # Pour envoyer sur PBS
+run_restore: false            # Pour recevoir depuis PBS
+
+start_vm_after_restore: true  # Damarrer ou non la VM après l'avoir restauré
+restart_vm_after_backup: true # Demarrer ou non la VM après l'avoir backup 

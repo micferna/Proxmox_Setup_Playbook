@@ -1,5 +1,6 @@
+# playbook/restore.yml
 - name: Restaurer les VMs depuis le PBS si configuré
-  when: configurer_pbs
+  when: run_restore
   block:
     - name: Vérifier si la configuration PBS est activée
       fail:

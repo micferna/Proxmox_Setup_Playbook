@@ -1,16 +1,27 @@
 ## CODEBYGPT
 
-![Logo Discord](https://zupimages.net/up/23/26/rumo.png)
-[Rejoignez le Discord !](https://discord.gg/rSfTxaW)
+# Guide Complet de Proxmox
 
-[![Utilisateurs en ligne](https://img.shields.io/discord/347412941630341121?style=flat-square&logo=discord&colorB=7289DA)](https://discord.gg/347412941630341121)
+Playbook complet pour Proxmox Backup Server : couvre l'installation, la configuration réseau, la sécurisation avec iptables, l'intégration de Let's Encrypt, ainsi que la sauvegarde et la restauration de VMs. Un guide essentiel pour une gestion optimale de PBS.
+
+## Paramètres du Playbook
+
+- `run_backup: true` : Active l'envoi des sauvegardes vers PBS.
+- `run_restore: false` : Active la restauration des sauvegardes depuis PBS.
+- `start_vm_after_restore: true` : Démarre la VM après la restauration.
+- `restart_vm_after_backup: true` : Redémarre la VM après la sauvegarde.
+
+### Rejoignez notre communauté sur Discord pour obtenir du support et partager vos expériences.
+
+[![Rejoignez le Discord !](https://img.shields.io/discord/347412941630341121?style=flat-square&logo=discord&colorB=7289DA)](https://discord.gg/rSfTxaW)
 
 <p align="center">
-  <img src="https://i.ibb.co/ZSwCpNd/DALL-E-2023-12-31-22-16-41-Une-repr-sentation-futuriste-et-sophistiqu-e-d-un-Proxmox-Setup-Playbook.png" alt="Nom de l'image">
+  <img src="https://i.ibb.co/ZSwCpNd/DALL-E-2023-12-31-22-16-41-Une-repr-sentation-futuriste-et-sophistiqu-e-d-un-Proxmox-Setup-Playbook.png" alt="Proxmox Setup Playbook">
 </p>
 
+## Mise en place de l'environnement
 
-# Setup environnement
+Pour préparer votre environnement de travail, suivez ces étapes :
 
 ```bash
 python3 -m venv venv
