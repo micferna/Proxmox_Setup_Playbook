@@ -1,4 +1,3 @@
-# playbook/backup.yml
 - name: Exécuter la sauvegarde des VMs sur Proxmox Backup Server
   when: run_backup
   block:
@@ -12,44 +11,37 @@
       register: all_vms
       when: configurer_pbs
 
-    - name: Vérifier si la VM a une sauvegarde sur PBS
-      shell: pvesm list "{{ pbs_storage_id }}" | grep -q "{{ item }}"
-      register: backup_check
-      ignore_errors: true
-      with_items: "{{ all_vms.stdout_lines }}"
-      when: configurer_pbs
+    - name: Vérifier sauvegardes et statut de chaque VM
+      block:
+        - name: Vérifier si la VM a une sauvegarde sur PBS
+          shell: pvesm list "{{ pbs_storage_id }}" | grep "{{ item }}" || echo "Pas de sauvegarde"
+          register: backup_check
+          loop: "{{ all_vms.stdout_lines }}"
+          when: configurer_pbs
 
-    - name: Vérifier si la VM est en cours d'exécution
-      shell: "qm status '{{ item }}' | grep -q 'status: running'"
-      register: vm_running
-      ignore_errors: true
-      with_items: "{{ all_vms.stdout_lines }}"
-      when: configurer_pbs
+        - name: Vérifier si la VM est en cours d'exécution
+          shell: "qm status '{{ item }}' | grep 'status: running' || echo '{{ item }} -> Déjà éteinte'"
+          register: vm_running
+          loop: "{{ all_vms.stdout_lines }}"
+          when: configurer_pbs
 
     - name: Éteindre la VM si elle est allumée
-      shell: "qm stop '{{ item.item }}'"
+      shell: "qm stop '{{ item }}'"
       when: >-
         configurer_pbs and
-        item.rc == 0 and
-        backup_check is defined and
-        (backup_check.results | selectattr('item', 'equalto', item.item) | map(attribute='rc') | list | first | default(0)) == 1
-      loop: "{{ vm_running.results }}"
-      loop_control:
-        loop_var: item
+        "'status: running' in lookup('shell', 'qm status \"' + item + '\" | grep \"status: running\"')"
+      loop: "{{ all_vms.stdout_lines }}"
 
     - name: Attendre que la VM soit éteinte
-      shell: "qm status '{{ item.item }}' | grep -q 'status: stopped'"
+      shell: "qm status '{{ item }}' | grep 'status: stopped' || true"
       register: vm_stopped
       retries: 30
       delay: 10
       until: vm_stopped.rc == 0
       when: >-
         configurer_pbs and
-        item.rc == 0 and
-        (backup_check.results | json_query("[?item=='" + item.item + "'].rc") | first | default(0)) == 1
-      loop: "{{ vm_running.results }}"
-      loop_control:
-        loop_var: item
+        "'status: running' in lookup('shell', 'qm status \"' + item + '\" | grep \"status: running\"')"
+      loop: "{{ all_vms.stdout_lines }}"
 
     - name: Effectuer la sauvegarde de la VM
       shell: vzdump "{{ item }}" --storage "{{ pbs_storage_id }}" --remove 1 --mode snapshot
@@ -60,8 +52,8 @@
       shell: qm start "{{ item }}"
       async: 600
       poll: 0
-      with_items: "{{ all_vms.stdout_lines }}"
       when: >-
         configurer_pbs and
         restart_vm_after_backup and
-        (vm_running.results | selectattr('item', 'equalto', item) | map(attribute='rc') | first | default(1)) == 0
+        (vm_running.results | selectattr('item', 'equalto', item) | map(attribute='stdout') | list | first | default('')) != 'Déjà éteinte'
+      with_items: "{{ all_vms.stdout_lines }}"
