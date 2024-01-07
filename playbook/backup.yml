@@ -11,43 +11,20 @@
       register: all_vms
       when: configurer_pbs
 
-    - name: Définir vm_is_template par défaut
-      set_fact:
-        vm_is_template: []
-
     - name: Identifier les templates VM
       shell: "qm config '{{ item }}' | grep -q 'template: 1'"
-      register: vm_is_template_result
+      register: vm_is_template
       failed_when: false
       loop: "{{ all_vms.stdout_lines }}"
       when: configurer_pbs
 
-    - name: Mettre à jour vm_is_template avec les résultats
-      set_fact:
-        vm_is_template: "{{ vm_is_template_result.results }}"
-
-    - name: Identifier les VMs non-templates
-      set_fact:
-        non_template_vms: "{{ all_vms.stdout_lines | difference(vm_is_template | selectattr('rc', 'equalto', 0) | map(attribute='item')) }}"
-      when: configurer_pbs
-
     - name: Éteindre les VMs non-templates
       shell: "qm stop '{{ item }}'"
-      loop: "{{ non_template_vms }}"
-      when: item not in vm_is_template | map(attribute='item')
-      register: vms_stopped
-      ignore_errors: true
-
-    - name: Attendre que les VMs non-templates soient éteintes
-      shell: "qm status '{{ item.item }}' | grep 'status: stopped' || true"
-      register: vm_stopped
-      retries: 30
-      delay: 10
-      until: vm_stopped.rc == 0
+      loop: "{{ all_vms.stdout_lines }}"
       when: 
-        - vms_stopped.results | selectattr('rc', 'defined') | list | length > 0
-        - item.item not in vm_is_template | map(attribute='item')
-      loop: "{{ vms_stopped.results }}"
+        - configurer_pbs
+        - item not in vm_is_template.results | map(attribute='item')
+      ignore_errors: true
 
     - name: Effectuer la sauvegarde de toutes les VMs
       shell: vzdump "{{ item }}" --storage "{{ pbs_storage_id }}" --remove 1 --mode snapshot
@@ -56,7 +33,10 @@
 
     - name: Redémarrer les VMs non-templates après la sauvegarde
       shell: qm start "{{ item }}"
-      loop: "{{ non_template_vms }}"
+      loop: "{{ all_vms.stdout_lines }}"
       when: 
         - configurer_pbs
         - restart_vm_after_backup
+        - item not in vm_is_template.results | map(attribute='item')
+        - "'status: running' not in (lookup('ansible.builtin.shell', 'qm status ' + item)).stdout"
+      ignore_errors: true
