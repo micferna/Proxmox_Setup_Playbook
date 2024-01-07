@@ -57,5 +57,8 @@
       shell: qm start "{{ item }}"
       async: 600
       poll: 0
-      when: item not in vm_is_template.results | map(attribute='item')
+      when: 
+        - configurer_pbs
+        - restart_vm_after_backup
+        - item not in vm_is_template.results | map(attribute='item')
       loop: "{{ all_vms.stdout_lines }}"
