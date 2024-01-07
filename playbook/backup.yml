@@ -11,6 +11,14 @@
       register: all_vms
       when: configurer_pbs
 
+    - name: Identifier les templates VM
+      shell: "qm config '{{ item }}' | grep -q 'template: 1'"
+      register: vm_is_template
+      failed_when: false
+      changed_when: false
+      loop: "{{ all_vms.stdout_lines }}"
+      when: configurer_pbs
+
     - name: Vérifier sauvegardes et statut de chaque VM
       block:
         - name: Vérifier si la VM a une sauvegarde sur PBS
@@ -25,12 +33,15 @@
           loop: "{{ all_vms.stdout_lines }}"
           when: configurer_pbs
 
-    - name: Éteindre la VM si elle est allumée
-      shell: "qm stop '{{ item }}'"
+    - name: Éteindre la VM si elle est allumée et n'est pas un template
+      shell: "qm stop '{{ item.item }}'"
       when: >-
         configurer_pbs and
-        "'status: running' in lookup('shell', 'qm status \"' + item + '\" | grep \"status: running\"')"
-      loop: "{{ all_vms.stdout_lines }}"
+        "'status: running' in lookup('shell', 'qm status \"' + item.item + '\" | grep \"status: running\"')" and
+        item.rc != 0
+      loop: "{{ vm_is_template.results }}"
+      loop_control:
+        loop_var: item
 
     - name: Attendre que la VM soit éteinte
       shell: "qm status '{{ item }}' | grep 'status: stopped' || true"
@@ -48,12 +59,15 @@
       when: configurer_pbs
       with_items: "{{ all_vms.stdout_lines }}"
 
-    - name: Redémarrer la VM
-      shell: qm start "{{ item }}"
+    - name: Redémarrer la VM si elle n'est pas un template
+      shell: qm start "{{ item.item }}"
       async: 600
       poll: 0
       when: >-
         configurer_pbs and
         restart_vm_after_backup and
-        (vm_running.results | selectattr('item', 'equalto', item) | map(attribute='stdout') | list | first | default('')) != 'Déjà éteinte'
-      with_items: "{{ all_vms.stdout_lines }}"
+        (vm_running.results | selectattr('item', 'equalto', item.item) | map(attribute='stdout') | list | first | default('')) != 'Déjà éteinte' and
+        "grep -q 'template: 1' not in item.stdout"
+      loop: "{{ vm_is_template.results }}"
+      loop_control:
+        loop_var: item
