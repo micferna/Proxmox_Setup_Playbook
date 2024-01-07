@@ -4,13 +4,6 @@
 
 Playbook complet pour Proxmox Backup Server : couvre l'installation, la configuration réseau, la sécurisation avec iptables, l'intégration de Let's Encrypt, ainsi que la sauvegarde et la restauration de VMs. Un guide essentiel pour une gestion optimale de PBS.
 
-## Paramètres du Playbook
-
-- `run_backup: true` : Active l'envoi des sauvegardes vers PBS.
-- `run_restore: false` : Active la restauration des sauvegardes depuis PBS.
-- `start_vm_after_restore: true` : Démarre la VM après la restauration.
-- `restart_vm_after_backup: true` : Redémarre la VM après la sauvegarde.
-
 ### Rejoignez notre communauté sur Discord pour obtenir du support et partager vos expériences.
 
 [![Rejoignez le Discord !](https://img.shields.io/discord/347412941630341121?style=flat-square&logo=discord&colorB=7289DA)](https://discord.gg/rSfTxaW)
@@ -83,6 +76,13 @@ Cette section concerne la configuration du réseau.
 - `ip_wireguard`: L'adresse IP du serveur WireGuard (L'IP DE LA VM V4).
 - `ip_v6_wireguard`: L'adresse IPv6 du serveur WireGuard (L'IP DE LA VM V6).
 - `port_wireguard`: Le port du serveur WireGuard.
+
+### Paramètres pour restart les vm et activer ou non le backup ou la restore
+
+- `run_backup: true` : Active l'envoi des sauvegardes vers PBS.
+- `run_restore: false` : Active la restauration des sauvegardes depuis PBS.
+- `start_vm_after_restore: true` : Démarre la VM après la restauration.
+- `restart_vm_after_backup: true` : Redémarre la VM après la sauvegarde.
 
 ---
 
