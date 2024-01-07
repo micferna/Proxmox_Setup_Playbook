@@ -11,23 +11,28 @@
       shell: pvesm list "{{ pbs_storage_id }}" | grep 'backup/vm' | sort -k5,6r
       register: sorted_vm_backup_list
 
+    - name: Vérifier si des sauvegardes sont disponibles
+      fail:
+        msg: "Aucune sauvegarde de VM trouvée sur le PBS."
+      when: sorted_vm_backup_list.stdout_lines | length == 0
+
     - name: Extraire la dernière sauvegarde pour chaque VM
       set_fact:
         latest_vm_backups: "{{ latest_vm_backups | default({}) | combine({ item.split(' ')[-1]: item }) }}"
       loop: "{{ sorted_vm_backup_list.stdout_lines }}"
-      when: sorted_vm_backup_list.stdout_lines is defined
-
+    
     - name: Afficher la liste des sauvegardes les plus récentes
       debug:
         msg: "{{ latest_vm_backups.values() }}"
+      when: latest_vm_backups | length > 0
 
-    - name: Vérifier si la VM existe déjà et restaurer si nécessaire
+    - name: Vérifier si la VM existe déjà, la restaurer si nécessaire, et la démarrer si ce n'est pas un template
       shell: |
         VMID="{{ item.split(' ')[-1] }}"
         BackupFile="{{ item.split(' ')[0] }}"
         if ! qm status "$VMID" > /dev/null 2>&1; then
           qmrestore "$BackupFile" "$VMID"
-          if [ "{{ start_vm_after_restore }}" = "true" ]; then
+          if qm config "$VMID" | grep -q 'template: 0' && {{ start_vm_after_restore }}; then
             qm start "$VMID"
           fi
         else
@@ -35,3 +40,5 @@
         fi
       loop: "{{ latest_vm_backups.values() }}"
       ignore_errors: yes
+      when: latest_vm_backups | length > 0
+
