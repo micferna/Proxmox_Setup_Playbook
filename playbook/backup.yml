@@ -11,54 +11,52 @@
       register: all_vms
       when: configurer_pbs
 
+    - name: Définir vm_is_template par défaut
+      set_fact:
+        vm_is_template: []
+
     - name: Identifier les templates VM
       shell: "qm config '{{ item }}' | grep -q 'template: 1'"
-      register: vm_is_template
-      failed_when: false
-      changed_when: false
-      loop: "{{ all_vms.stdout_lines }}"
-      when: configurer_pbs
-
-    - name: Vérifier si la VM est en cours d'exécution
-      shell: "qm status '{{ item }}' | grep 'status: running'"
-      register: vm_running
-      ignore_errors: yes
-      changed_when: false
+      register: vm_is_template_result
       failed_when: false
       loop: "{{ all_vms.stdout_lines }}"
       when: configurer_pbs
 
-    - name: Identifier les VMs allumées et non templates
+    - name: Mettre à jour vm_is_template avec les résultats
       set_fact:
-        vms_to_shutdown: "{{ vm_running.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"
+        vm_is_template: "{{ vm_is_template_result.results }}"
+
+    - name: Identifier les VMs non-templates
+      set_fact:
+        non_template_vms: "{{ all_vms.stdout_lines | difference(vm_is_template | selectattr('rc', 'equalto', 0) | map(attribute='item')) }}"
       when: configurer_pbs
 
-    - name: Éteindre les VMs nécessaires
+    - name: Éteindre les VMs non-templates
       shell: "qm stop '{{ item }}'"
-      when: item in vms_to_shutdown and item not in vm_is_template.results | map(attribute='item')
-      loop: "{{ all_vms.stdout_lines }}"
+      loop: "{{ non_template_vms }}"
+      when: item not in vm_is_template | map(attribute='item')
       register: vms_stopped
+      ignore_errors: true
 
-    - name: Attendre que la VM soit éteinte
-      shell: "qm status '{{ item }}' | grep 'status: stopped' || true"
+    - name: Attendre que les VMs non-templates soient éteintes
+      shell: "qm status '{{ item.item }}' | grep 'status: stopped' || true"
       register: vm_stopped
       retries: 30
       delay: 10
       until: vm_stopped.rc == 0
-      when: item in vms_stopped.results | map(attribute='item')
-      loop: "{{ all_vms.stdout_lines }}"
+      when: 
+        - vms_stopped.results | selectattr('rc', 'defined') | list | length > 0
+        - item.item not in vm_is_template | map(attribute='item')
+      loop: "{{ vms_stopped.results }}"
 
-    - name: Effectuer la sauvegarde de la VM
+    - name: Effectuer la sauvegarde de toutes les VMs
       shell: vzdump "{{ item }}" --storage "{{ pbs_storage_id }}" --remove 1 --mode snapshot
       when: configurer_pbs
       loop: "{{ all_vms.stdout_lines }}"
 
-    - name: Redémarrer les VMs non-templates
+    - name: Redémarrer les VMs non-templates après la sauvegarde
       shell: qm start "{{ item }}"
-      async: 600
-      poll: 0
+      loop: "{{ non_template_vms }}"
       when: 
         - configurer_pbs
         - restart_vm_after_backup
-        - item not in vm_is_template.results | map(attribute='item')
-      loop: "{{ all_vms.stdout_lines }}"
